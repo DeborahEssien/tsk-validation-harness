@@ -70,7 +70,7 @@ Download from https://www.sleuthkit.org/sleuthkit/download.php
 ### Step 2: Clone and Set Up
 
 ```bash
-git clone https://github.com/deborah-nguefack/tsk-validation-harness.git
+git clone https://github.com/DeborahEssien/tsk-validation-harness
 cd tsk-validation-harness
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
