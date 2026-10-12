@@ -147,3 +147,30 @@ MIT License. See `LICENSE`.
 
 - [The Sleuth Kit](https://www.sleuthkit.org/sleuthkit/)
 - [NIST Computer Forensic Reference Data Sets (CFReDS)](https://cfreds.nist.gov/) — background resource; **not** the source of the controlled test's reference hashes.
+## Additional Forensic Testing — M57 Jean Dataset
+
+The TSK Validation Harness can also be evaluated using external forensic disk images, including the **M57 Jean dataset**, a forensic research dataset associated with Digital Corpora and the NIST CFReDS collection.
+
+**Dataset resources:**
+- [NIST Computer Forensic Reference Data Sets (CFReDS)](https://cfreds.nist.gov/)
+- [Digital Corpora](https://digitalcorpora.org/)
+
+The M57 Jean disk image is not distributed with this repository and must be obtained separately.
+
+### Running the Validator on M57 Jean
+
+After obtaining the disk image and preparing a suitable ground-truth CSV containing independently established SHA-256 hashes, run:
+
+```bash
+python validator.py --image m57-jean.dd --ground-truth m57_ground_truth.csv --offset 32256
+```
+
+Replace the filenames and offset with the correct values for your image. The example offset is not applicable to every disk image.
+
+The validator coordinates three components:
+
+1. **Hash Extractor** — Extracts file contents and calculates SHA-256 hashes using The Sleuth Kit.
+2. **Comparator** — Compares extracted hashes against the supplied ground truth.
+3. **Court Reporter** — Generates a structured JSON report summarizing the comparison results.
+
+**Validation scope:** The included controlled FAT16 experiment produced 8 matching SHA-256 hashes out of 8 tested files. This result does not establish the harness's accuracy on M57 Jean or other forensic datasets. External datasets require separate testing and appropriate reference hashes.
