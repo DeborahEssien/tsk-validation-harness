@@ -1,143 +1,149 @@
 # TSK Validation Harness
 
-This is a Python-based validation tool for The Sleuth Kit (TSK) that helps small law enforcement agencies demonstrate tool reliability for evidence admissibility in Canadian courts.
+A Python-based demonstration harness for extracting SHA-256 hashes from files in forensic disk images, comparing them with reference hashes, and generating structured validation reports.
 
-## Overview
-
-This tool validates TSK file hashes against the NIST CFReDS M57-Jean ground truth dataset, producing a court-ready JSON report. It addresses the challenge faced by resource-constrained Canadian law enforcement agencies who use open-source forensic tools but must still meet evidentiary standards under *R. v. Mohan* (1994) and *R. v. Bingley* (2017).
+The project explores reproducible testing of digital-forensic workflows, with particular interest in how forensic practitioners can document test scope, results, and limitations. It is **not** a certification of The Sleuth Kit (TSK), a legal admissibility assessment, or a substitute for laboratory validation procedures.
 
 ## Features
 
-- Extracts file hashes from disk images using TSK (`fls`, `icat`, `istat`)
-- Compares extracted hashes against NIST ground truth
-- Generates JSON report with:
-  - File-by-file match/mismatch status
-  - Accuracy percentage
-  - Plain-language court summary
-- Sanity test injection for mismatch detection verification
-- Processing: <10 minutes/10GB on standard hardware
+- Reads forensic disk images using `pytsk3` (Python bindings for The Sleuth Kit).
+- Supports a filesystem offset specified in **bytes**.
+- Extracts and SHA-256-hashes **root-level regular files**, including zero-byte files.
+- Reads file contents in bounded chunks and records extraction errors.
+- Skips FAT volume-label entries in the controlled FAT16 test.
+- Compares extracted hashes with a CSV reference dataset, reporting matches, mismatches, missing entries, extraction errors, and ambiguous filenames.
+- Generates a JSON report summarizing comparable files and unresolved issues.
 
-## Repository Structure
+## Controlled validation experiment
 
-```
+The repository includes a **synthetic 20 MiB FAT16 disk image** containing eight known source files. Reference SHA-256 hashes were calculated directly from the source files using Python's `hashlib`, separately from the `pytsk3` extraction workflow.
+
+The controlled experiment produced:
+
+| Metric | Result |
+| --- | ---: |
+| Source evidence files | 8 |
+| Successfully extracted and hashed | 8 |
+| Matching SHA-256 hashes | 8 |
+| Mismatches | 0 |
+| Extraction errors | 0 |
+| FAT volume-label entries skipped | 1 |
+| Match rate among comparable unique filenames | 100% |
+| Report assessment | `NO_ISSUES_IN_COMPARABLE_SET` |
+
+The empty file was included and correctly produced the standard SHA-256 digest for zero bytes. These results demonstrate agreement **for this controlled set only**; they do not establish performance across other disk images, filesystems, deleted files, or nested directories.
+
+The image fingerprint is recorded in `controlled_test/disk_image_sha256.txt`. The successful example reports are in `controlled_test/validation_results_v2/`.
+
+## Repository structure
+
+```text
 tsk-validation-harness/
 ├── README.md
 ├── LICENSE
 ├── requirements.txt
-├── validator.py                 # Main validation tool
-├── hash_extractor.py            # Extracts SHA-256 hashes
-├── comparator.py                # Compares hashes vs ground truth
-├── court_reporter.py            # Generates JSON court report
-├── compare_m57.py               # M57-specific comparison script
-├── hash_extractor_m57_subset.py # M57 subset extraction
-├── ground_truth.csv             # Ground truth for test image
-├── ground_truth_correct.csv     # Corrected ground truth
-├── m57_ground_truth.csv         # Ground truth for M57-Jean
-├── my-test.dd                   # Test disk image
-├── tsk_hashes.txt               # Example output
-├── tsk_hashes_m57.txt           # M57 extraction output
-├── validation_report.json       # Example court report
-└── tests/                       # Automated tests
+├── validator.py
+├── hash_extractor.py
+├── comparator.py
+├── court_reporter.py
+├── .gitignore
+├── controlled_test/
+│   ├── controlled-test.dd
+│   ├── controlled_ground_truth.csv
+│   ├── disk_image_sha256.txt
+│   ├── source_files/
+│   └── validation_results_v2/
+└── tests/
+    └── test_hash_extractor.py
 ```
 
 ## Installation
 
-### Prerequisites
-
-- Python 3.11+
-- The Sleuth Kit (TSK) 4.12+
-
-### Step 1: Install TSK
-
-**Kali Linux:**
-```bash
-sudo apt-get install sleuthkit
-```
-
-**Ubuntu/Debian:**
-```bash
-sudo apt-get install sleuthkit
-```
-
-**macOS:**
-```bash
-brew install sleuthkit
-```
-
-**Windows:**
-Download from https://www.sleuthkit.org/sleuthkit/download.php
-
-### Step 2: Clone and Set Up
+The experiment was run on **Kali Linux** using Python 3.13 and `pytsk3`. A compatible Python environment and the dependencies in `requirements.txt` are required; `pytsk3` installation may require system build dependencies depending on the platform.
 
 ```bash
-git clone https://github.com/deborah-nguefack/tsk-validation-harness.git
-cd tsk-validation-harness
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+# Clone the repository
+ git clone https://github.com/DeborahEssien/tsk-validation-harness.git
+ cd tsk-validation-harness
+
+# Create and activate a virtual environment
+ python3 -m venv venv
+ source venv/bin/activate
+
+# Install Python dependencies
+ python -m pip install -r requirements.txt
 ```
 
-## How to Run
+If necessary on Kali/Debian, install The Sleuth Kit with `sudo apt install sleuthkit`. The application accesses the image through `pytsk3`; it does not require invoking TSK command-line tools during the normal validation workflow.
 
-### Option A: Using Validator (Recommended)
+## Reproduce the controlled validation
+
+From the repository root, run:
 
 ```bash
-python validator.py --image my-test.dd --ground-truth ground_truth.csv
+python validator.py \
+  --image controlled_test/controlled-test.dd \
+  --ground-truth controlled_test/controlled_ground_truth.csv \
+  --offset 0 \
+  --output-dir outputs
 ```
 
-### Option B: Run Step by Step
+This generates:
+
+- `outputs/tsk_hashes.csv` — extracted SHA-256 hashes and extraction status.
+- `outputs/comparison_results.csv` — file-by-file comparison outcomes.
+- `outputs/court_report.json` — structured technical validation summary (despite its historical filename, **not** a legal opinion or court certification).
+
+To verify the disk image has the recorded fingerprint:
 
 ```bash
-# Step 1: Extract hashes
-python hash_extractor.py my-test.dd outputs/tsk_hashes.csv
-
-# Step 2: Compare against ground truth
-python comparator.py outputs/tsk_hashes.csv ground_truth.csv outputs/comparison_results.csv
-
-# Step 3: Generate court report
-python court_reporter.py outputs/comparison_results.csv outputs/court_report.json
+sha256sum -c controlled_test/disk_image_sha256.txt
 ```
 
-### Option C: Run on M57-Jean (with offset)
+To run the automated tests:
 
 ```bash
-python validator.py --image m57-jean.dd --ground-truth m57_ground_truth.csv --offset 32256
+python -m pytest tests/test_hash_extractor.py -v
 ```
 
-## Expected Output
+The controlled-image test checks that eight extracted entries have successful status, exclude the FAT volume label, and match the supplied reference hashes. The test requires the included disk image.
 
-```json
-{
-  "summary": {
-    "total_files_compared": 8,
-    "matches": 8,
-    "mismatches": 0,
-    "accuracy_percent": 100.0
-  },
-  "court_summary": {
-    "statement": "TSK demonstrated 100.00% accuracy on 8 files.",
-    "recommendation": "Tool is reliable for forensic use"
-  }
-}
-```
+## Using another image
 
-## Running Tests
+Supply the image path, appropriate reference CSV, and **byte offset** to the filesystem:
 
 ```bash
-pytest tests/ -v
+python validator.py \
+  --image /path/to/image.dd \
+  --ground-truth /path/to/reference.csv \
+  --offset 0 \
+  --output-dir outputs
 ```
+
+Reference CSV columns are `filename,sha256`. Files with the same basename in different directories can be ambiguous: the current extractor does not traverse directories recursively or use full paths as comparison keys.
+
+## Scope and limitations
+
+- **Root directory only:** nested files are not included in the extraction set.
+- **Filesystem coverage:** the reproducible controlled test uses FAT16; broader filesystem support is not established by this experiment.
+- **Filename-based comparison:** duplicate filenames are flagged as ambiguous rather than silently treated as unique.
+- **Limited evidence scope:** deleted files, alternate data streams, unallocated space, and other forensic artifacts are not comprehensively validated.
+- **Reference provenance:** reference hashes are calculated from known synthetic source files; they are independent of TSK extraction but use the same SHA-256 algorithm.
+- **Interpretation:** a 100% match rate here applies only to eight comparable files and must not be interpreted as a general tool-accuracy figure or a statement of legal admissibility.
+
+## Future work
+
+Potential extensions include recursive path-aware extraction, additional filesystem test images, deliberately altered reference-hash negative controls, and expanded automated tests for error handling and ambiguous names.
 
 ## License
 
-MIT License
+MIT License. See `LICENSE`.
 
-## Authors
+## Author
 
-- Naomi Nguefack (1416225)
-- Deborah Essien (1408505)
+- Deborah Essien
 
-## References
+## Background resources
 
-- Casey, E., Nelson, A. & Hyde, J. (2019). Digital Investigation, 31, 100873.
-- Hargreaves, C., Nelson, A., & Casey, E. (2024). Forensic Science International: Digital Investigation, 48(Suppl.) 301723.
-- NIST (2023). Computer Forensic Reference Data Sets (CFReDS). https://cfreds.nist.gov/
+- [The Sleuth Kit](https://www.sleuthkit.org/sleuthkit/)
+- [NIST Computer Forensic Reference Data Sets (CFReDS)](https://cfreds.nist.gov/) — background resource; **not** the source of the controlled test's reference hashes.

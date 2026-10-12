@@ -1,6 +1,0 @@
-Analyzing: my-test.dd
-
-SHA-256 hashes:
-
-file1.txt: a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447
-file2.txt: d949d83e4ebc8c10b77d15e0d228ebabea016674a616ded58bd9e4fc7f87fa3b

@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """
-TSK Validation Harness - Main Entry Point
+TSK Validation Harness - Demo Version
+
+Coordinates forensic hash extraction, comparison against
+reference hashes, and generation of a technical report.
+
+This workflow assesses a limited set of filesystem files.
+It does not certify the forensic tool or establish legal
+admissibility.
 """
 
-import sys
+import argparse
 import os
-import json
-from datetime import datetime
+import sys
+from pathlib import Path
 
 from hash_extractor import extract_hashes
 from comparator import compare_hashes
@@ -14,74 +21,160 @@ from court_reporter import generate_report
 
 
 class TSKValidator:
-    def __init__(self, image_path, ground_truth, offset=0):
-        self.image_path = image_path
-        self.ground_truth = ground_truth
-        self.offset = offset
-    
+    def __init__(
+        self,
+        image_path,
+        ground_truth,
+        offset=0,
+        output_dir="outputs"
+    ):
+        self.image_path = Path(image_path)
+        self.ground_truth = Path(ground_truth)
+        self.offset = int(offset)
+        self.output_dir = Path(output_dir)
+
     def run_all(self):
-        print("\n" + "="*60)
-        print("🔍 TSK VALIDATION HARNESS")
-        print("="*60)
+        if not self.image_path.is_file():
+            raise FileNotFoundError(
+                f"Forensic image not found: {self.image_path}"
+            )
+
+        if not self.ground_truth.is_file():
+            raise FileNotFoundError(
+                f"Ground-truth CSV not found: {self.ground_truth}"
+            )
+
+        if self.offset < 0:
+            raise ValueError(
+                "Filesystem offset cannot be negative"
+            )
+
+        self.output_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        hashes_csv = self.output_dir / "tsk_hashes.csv"
+        comparison_csv = (
+            self.output_dir / "comparison_results.csv"
+        )
+        report_json = self.output_dir / "court_report.json"
+
+        print("\n" + "=" * 60)
+        print("TSK VALIDATION HARNESS - DEMO")
+        print("=" * 60)
         print(f"Image: {self.image_path}")
-        print(f"Ground Truth: {self.ground_truth}")
-        print(f"Offset: {self.offset}")
-        print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        print("\n" + "="*60)
-        print("Step 1: Extracting file hashes using TSK...")
-        print("="*60)
-        
-        try:
-            extract_hashes(self.image_path, "outputs/tsk_hashes.csv", self.offset)
-            print("✅ Extraction complete")
-        except Exception as e:
-            print(f"❌ Error: {e}")
-            return False
-        
-        print("\n" + "="*60)
-        print("Step 2: Comparing hashes against ground truth...")
-        print("="*60)
-        
-        try:
-            compare_hashes("outputs/tsk_hashes.csv", self.ground_truth, "outputs/comparison_results.csv")
-        except Exception as e:
-            print(f"❌ Error: {e}")
-            return False
-        
-        print("\n" + "="*60)
-        print("Step 3: Generating court-ready report...")
-        print("="*60)
-        
-        try:
-            generate_report("outputs/comparison_results.csv", "outputs/court_report.json")
-        except Exception as e:
-            print(f"❌ Error: {e}")
-            return False
-        
-        print("\n" + "="*60)
-        print("📊 VALIDATION COMPLETE")
-        print("="*60)
-        print("Status: ✅ PASSED")
-        print("Output: outputs/court_report.json")
-        print("="*60)
-        
-        return True
+        print(f"Ground truth: {self.ground_truth}")
+        print(f"Filesystem offset: {self.offset} bytes")
+        print(f"Output directory: {self.output_dir}")
+        print("=" * 60)
+
+        print("\n[1/3] EXTRACTING SHA-256 HASHES")
+
+        extract_hashes(
+            str(self.image_path),
+            str(hashes_csv),
+            self.offset
+        )
+
+        print("\n[2/3] COMPARING WITH GROUND TRUTH")
+
+        compare_hashes(
+            str(hashes_csv),
+            str(self.ground_truth),
+            str(comparison_csv)
+        )
+
+        print("\n[3/3] GENERATING FORENSIC REPORT")
+
+        report = generate_report(
+            str(comparison_csv),
+            str(report_json)
+        )
+
+        summary = report["validation_summary"]
+
+        print("\n" + "=" * 60)
+        print("VALIDATION WORKFLOW COMPLETE")
+        print("=" * 60)
+
+        print(f"Assessment: {summary['assessment']}")
+        print(
+            "Comparable files: "
+            f"{summary['comparable_unique_filenames']}"
+        )
+        print(f"Matches: {summary['matches']}")
+        print(f"Mismatches: {summary['mismatches']}")
+
+        rate = summary["match_rate_percent"]
+
+        if rate is None:
+            print("Match rate: N/A")
+        else:
+            print(f"Match rate: {rate:.2f}%")
+
+        print("\nGenerated files:")
+        print(f"  {hashes_csv}")
+        print(f"  {comparison_csv}")
+        print(f"  {report_json}")
+
+        print("=" * 60)
+
+        return report
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description=(
+            "Validate extracted forensic file hashes "
+            "against a reference dataset"
+        )
+    )
+
+    parser.add_argument(
+        "--image",
+        default="controlled_test/controlled-test.dd",
+        help="Path to forensic disk image"
+    )
+
+    parser.add_argument(
+        "--ground-truth",
+        default="controlled_test/controlled_ground_truth.csv",
+        help="Path to reference hash CSV"
+    )
+
+    parser.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="Filesystem offset in bytes"
+    )
+
+    parser.add_argument(
+        "--output-dir",
+        default="outputs",
+        help="Directory for generated reports"
+    )
+
+    args = parser.parse_args()
+
+    try:
+        validator = TSKValidator(
+            image_path=args.image,
+            ground_truth=args.ground_truth,
+            offset=args.offset,
+            output_dir=args.output_dir
+        )
+
+        validator.run_all()
+
+    except Exception as exc:
+        print(
+            f"\n[ERROR] Validation workflow failed: {exc}",
+            file=sys.stderr
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="TSK Validation Harness")
-    parser.add_argument('--image', default='my-test.dd', help='Disk image path')
-    parser.add_argument('--ground-truth', default='ground_truth.csv', help='Ground truth CSV')
-    parser.add_argument('--offset', default=0, type=int, help='Filesystem offset in bytes')
-    
-    args = parser.parse_args()
-    
-    os.makedirs('outputs', exist_ok=True)
-    
-    validator = TSKValidator(args.image, args.ground_truth, args.offset)
-    success = validator.run_all()
-    
-    sys.exit(0 if success else 1)
+    main()

@@ -1,0 +1,105 @@
+{
+    "report_title": "TSK Hash Validation Assessment",
+    "report_metadata": {
+        "generated_at_utc": "2026-10-12T04:01:22.883241+00:00",
+        "report_type": "Technical Forensic Validation",
+        "hash_algorithm": "SHA-256"
+    },
+    "validation_summary": {
+        "total_filename_groups": 8,
+        "comparable_unique_filenames": 8,
+        "matches": 8,
+        "mismatches": 0,
+        "match_rate_percent": 100.0,
+        "issues": {
+            "mismatches": 0,
+            "missing_from_extraction": 0,
+            "not_in_ground_truth": 0,
+            "extraction_errors": 0,
+            "invalid_ground_truth": 0,
+            "ambiguous_filenames": 0,
+            "unknown_statuses": 0
+        },
+        "assessment": "NO_ISSUES_IN_COMPARABLE_SET"
+    },
+    "methodology": {
+        "extraction_tool": "pytsk3 (The Sleuth Kit bindings)",
+        "comparison_method": "SHA-256 values are compared by filename where exactly one extracted entry and one ground-truth entry share that filename.",
+        "scope": "The current extractor processes regular files in the filesystem root directory only."
+    },
+    "limitations": [
+        "This assessment does not validate every file on the disk.",
+        "Filename-only comparison cannot reliably distinguish files with identical names in different directories.",
+        "Missing files may be outside the extraction scope rather than evidence of extraction failure.",
+        "The independence and provenance of the reference hashes must be established separately.",
+        "The reported match rate applies only to comparable unique filenames.",
+        "A successful hash comparison does not establish overall forensic tool reliability or legal admissibility."
+    ],
+    "legal_note": "This report documents technical observations and is not a legal opinion or certification of evidentiary admissibility.",
+    "file_results": [
+        {
+            "filename": "case_notes.txt",
+            "tsk_hash": "476c653ab4f9d2209af05248334f497e309d31b748e3f5072de4ea3109d4a12c",
+            "truth_hash": "476c653ab4f9d2209af05248334f497e309d31b748e3f5072de4ea3109d4a12c",
+            "match": "YES",
+            "status": "MATCH",
+            "error": ""
+        },
+        {
+            "filename": "confidential.txt",
+            "tsk_hash": "39148063f45739d7c8b9e95dfd798a9b917045a1806fef70142d472401c829e9",
+            "truth_hash": "39148063f45739d7c8b9e95dfd798a9b917045a1806fef70142d472401c829e9",
+            "match": "YES",
+            "status": "MATCH",
+            "error": ""
+        },
+        {
+            "filename": "empty_file.txt",
+            "tsk_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "truth_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "match": "YES",
+            "status": "MATCH",
+            "error": ""
+        },
+        {
+            "filename": "file1.txt",
+            "tsk_hash": "716dcbe10eaf9da48da9e358ce38e85c3659258c98025d55dedbb95e7152b116",
+            "truth_hash": "716dcbe10eaf9da48da9e358ce38e85c3659258c98025d55dedbb95e7152b116",
+            "match": "YES",
+            "status": "MATCH",
+            "error": ""
+        },
+        {
+            "filename": "file2.txt",
+            "tsk_hash": "14b3ae07df161908aae96d9900a6f91ced256a39fe3b69615b0f603cb72be42e",
+            "truth_hash": "14b3ae07df161908aae96d9900a6f91ced256a39fe3b69615b0f603cb72be42e",
+            "match": "YES",
+            "status": "MATCH",
+            "error": ""
+        },
+        {
+            "filename": "inventory.csv",
+            "tsk_hash": "29533701d4311280fe9c844e4000a324bd956fcbff059844c6cef578d50c50ca",
+            "truth_hash": "29533701d4311280fe9c844e4000a324bd956fcbff059844c6cef578d50c50ca",
+            "match": "YES",
+            "status": "MATCH",
+            "error": ""
+        },
+        {
+            "filename": "numbers.txt",
+            "tsk_hash": "fdd8a8fd79f8abdb69960a45a7e8a3a9ccd5b2f98956ca2c128472af85658493",
+            "truth_hash": "fdd8a8fd79f8abdb69960a45a7e8a3a9ccd5b2f98956ca2c128472af85658493",
+            "match": "YES",
+            "status": "MATCH",
+            "error": ""
+        },
+        {
+            "filename": "script.sh",
+            "tsk_hash": "b82336361591846671c436c06e74b036333310d64f78bb2e139dbd0e06e0a8c0",
+            "truth_hash": "b82336361591846671c436c06e74b036333310d64f78bb2e139dbd0e06e0a8c0",
+            "match": "YES",
+            "status": "MATCH",
+            "error": ""
+        }
+    ]
+}

@@ -1,16 +1,25 @@
-# Large forensic images
+# Forensic disk images
 *.dd
 *.raw
 *.E01
 *.E02
 
-# Python cache
+# Allow the synthetic controlled test image
+!controlled_test/controlled-test.dd
+
+# Python virtual environments
+venv/
+.venv/
+
+# Python caches
 __pycache__/
 *.pyc
 *.pyo
-*.swp
 .pytest_cache/
 
-# Outputs (optional)
-outputs/
+# Temporary files
+*.swp
 *.log
+
+# Default generated outputs
+outputs/
